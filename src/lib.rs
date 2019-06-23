@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::env;
 use std::ops::Deref;
@@ -17,6 +18,14 @@ pub struct Symbol(String);
 impl Symbol {
     pub fn new<S: Into<String>>(s: S) -> Symbol {
         Symbol(s.into())
+    }
+}
+impl<S> From<S> for Symbol
+where
+    S: Into<String>,
+{
+    fn from(s: S) -> Symbol {
+        Symbol::new(s)
     }
 }
 
@@ -127,4 +136,59 @@ pub fn get_latest_price_for_equity(symbol: Symbol) -> Result<f64, ApiError> {
         .max_by_key(|&(date, data)| date)
         .map(|(date, data)| data.close)
         .unwrap())
+}
+
+pub enum TimePeriod {
+    Month,
+    Year,
+    AllTime,
+}
+
+#[derive(Debug)]
+pub struct EquitySummary {
+    latest_price: f64,
+    earliest_price: f64,
+    max_price: f64,
+    min_price: f64,
+}
+pub fn summary_for_equity(
+    symbol: Symbol,
+    time_period: TimePeriod,
+) -> Result<EquitySummary, ApiError> {
+    let time_series = get_time_series_daily(&CLIENT, symbol, DailyOutputSize::Full)?.time_series;
+
+    Ok(EquitySummary {
+        latest_price: time_series
+            .iter()
+            .max_by_key(|&(date, data)| date)
+            .map(|(_date, data)| data.close)
+            .unwrap(),
+        earliest_price: time_series
+            .iter()
+            .min_by_key(|&(date, data)| date)
+            .map(|(_date, data)| data.close)
+            .unwrap(),
+        max_price: time_series
+            .values()
+            .map(|data| data.high)
+            .max_by(f64_ord_panic)
+            .unwrap(),
+        min_price: time_series
+            .values()
+            .map(|data| data.low)
+            .min_by(f64_ord_panic)
+            .unwrap(),
+    })
+}
+
+fn f64_ord_panic(a: &f64, b: &f64) -> Ordering {
+    if a > b {
+        Ordering::Greater
+    } else if a < b {
+        Ordering::Less
+    } else if a == b {
+        Ordering::Equal
+    } else {
+        panic!("input must be comparable")
+    }
 }
