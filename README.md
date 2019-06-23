@@ -9,4 +9,5 @@
 
 ```
 $ portfolio latest-price ETHI.AX
+$ portfolio summary ETHI.AX
 ```
