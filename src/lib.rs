@@ -8,6 +8,16 @@ use reqwest;
 use serde::Deserialize;
 use serde_aux::field_attributes::deserialize_number_from_string;
 
+type Date = chrono::NaiveDate;
+
+fn deserialize_date_string<'de, D>(deserializer: D) -> Result<Date, D::Error>
+where
+    D: serde::de::Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    Date::parse_from_str(&s, "%Y-%m-%d").map_err(serde::de::Error::custom)
+}
+
 lazy_static! {
     static ref CLIENT: reqwest::Client = reqwest::Client::new();
     static ref VANTAGE_API_KEY: String =
@@ -105,7 +115,7 @@ struct TimeSeriesDailyResponse {
     #[serde(rename = "Meta Data")]
     metadata: serde_json::Value,
     #[serde(rename = "Time Series (Daily)")]
-    time_series: HashMap<String, TimeSeriesDay>,
+    time_series: HashMap<Date, TimeSeriesDay>,
 }
 
 fn get_time_series_daily(
