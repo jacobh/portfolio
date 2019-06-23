@@ -1,0 +1,16 @@
+[package]
+name = "portfolio"
+version = "0.1.0"
+authors = ["Jacob Haslehurst <jacob@haslehurst.net>"]
+edition = "2018"
+
+[dependencies]
+clap = "2.33.0"
+
+[lib]
+name = "portfolio"
+path = "src/lib.rs"
+
+[[bin]]
+name = "portfolio-cli"
+path = "src/bin.rs"
