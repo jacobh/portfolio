@@ -155,7 +155,19 @@ pub fn summary_for_equity(
     symbol: Symbol,
     time_period: TimePeriod,
 ) -> Result<EquitySummary, ApiError> {
+    let now = chrono::Utc::now();
+    let today = now.date().naive_local();
+
     let time_series = get_time_series_daily(&CLIENT, symbol, DailyOutputSize::Full)?.time_series;
+
+    let time_series: HashMap<_, _> = time_series
+        .into_iter()
+        .filter(|(date, data)| match time_period {
+            TimePeriod::Month => *date + chrono::Duration::days(30) >= today,
+            TimePeriod::Year => *date + chrono::Duration::days(365) >= today,
+            TimePeriod::AllTime => true,
+        })
+        .collect();
 
     Ok(EquitySummary {
         latest_price: time_series
